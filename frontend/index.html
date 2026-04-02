@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geofiltratsiya Simulyator Platformasi</title>
+    <!-- Modern premium font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="hero">
+            <h1>Geofiltratsiya Veb-Platformasi 💧</h1>
+            <p>Adveksiya-Diffuziya va Darsi tenglamalari yordamida yer osti suvlari dinamikasini matematik modellashtirish.</p>
+        </header>
+
+        <main class="dashboard">
+            <aside class="sidebar glass-panel">
+                <h2>Parametrlar</h2>
+                <form id="simForm">
+                    <div class="input-group">
+                        <label for="soil_type">Tuproq Turi</label>
+                        <select id="soil_type" name="soil_type">
+                            <option value="Shag'al">Shag'al</option>
+                            <option value="Qum">Qum</option>
+                            <option value="Supes">Supes</option>
+                            <option value="Suglinka">Suglinka</option>
+                            <option value="Loy">Loy</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="sim_time">Simulyatsiya Davomiyligi (soat): <span id="time-val">12</span> s</label>
+                        <input type="range" id="sim_time" name="sim_time" min="1" max="48" value="12" oninput="document.getElementById('time-val').textContent = this.value;">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="Qs">Sug'orish Suvi Miqdori (m³/s, Qs)</label>
+                        <input type="number" id="Qs" name="Qs" value="100.0" step="0.1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="Qin">Yog'inlar (m³/s, Qin)</label>
+                        <input type="number" id="Qin" name="Qin" value="0.0" step="0.1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="Qb">Bug'lanish (m³/s, Qb)</label>
+                        <input type="number" id="Qb" name="Qb" value="10.0" step="0.1">
+                    </div>
+
+                    <button type="submit" class="primary-btn">Simulyatsiyani Boshlash</button>
+                </form>
+                
+                <div id="analytics" class="analytics-card" style="display: none;">
+                    <h3>Tahlil Xulosasi</h3>
+                    <p id="analysis-text"></p>
+                </div>
+            </aside>
+
+            <section class="visuals">
+                <div class="chart-container glass-panel">
+                    <div id="chart_h"></div>
+                </div>
+                <div class="chart-wrapper-grid">
+                    <div class="chart-container glass-panel">
+                        <div id="chart_dyn"></div>
+                    </div>
+                    <div class="chart-container glass-panel">
+                        <div id="chart_3d"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Plotly via CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
