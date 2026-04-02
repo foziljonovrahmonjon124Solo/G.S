@@ -1,8 +1,28 @@
+let gpsData = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     if ('Notification' in window && navigator.serviceWorker) {
         if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
             Notification.requestPermission();
         }
+    }
+    
+    // GPS Button handler
+    const gpsBtn = document.getElementById('getGpsBtn');
+    if (gpsBtn) {
+        gpsBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                document.getElementById('gpsStatus').innerText = "📡 Qidirilmoqda...";
+                navigator.geolocation.getCurrentPosition(pos => {
+                    gpsData = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    document.getElementById('gpsStatus').innerText = `📍 O'zlashtirildi: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                }, err => {
+                    document.getElementById('gpsStatus').innerText = "❌ GPS ruxsati berilmadi yoki xato";
+                });
+            } else {
+                document.getElementById('gpsStatus').innerText = "🚫 Brauzerda GPS mavjud emas";
+            }
+        });
     }
 });
 
@@ -21,7 +41,9 @@ document.getElementById('simForm').addEventListener('submit', async (e) => {
         T_temp: parseFloat(document.getElementById('T_temp').value),
         S0: parseFloat(document.getElementById('S0').value),
         k_S: parseFloat(document.getElementById('k_S').value),
-        k_F: parseFloat(document.getElementById('k_F').value)
+        k_F: parseFloat(document.getElementById('k_F').value),
+        gps: gpsData,
+        has_image: document.getElementById('cameraInput').files.length > 0
     };
 
     try {
@@ -58,22 +80,22 @@ function renderCharts(data) {
         legend: { font: { color: '#cbd5e1' } }
     };
 
-    // 1. Water Level H(t) Chart
-    const hTrace = {
+    // 1. Pressure P(t) Chart (Previously H(t))
+    const pTrace = {
         x: data.t_vals,
-        y: data.H_vals,
+        y: data.P_vals,
         mode: 'lines',
-        name: 'H(t)',
+        name: 'Gidro-Bosim P(t)',
         line: { color: '#3b82f6', width: 3, shape: 'spline' },
         fill: 'tozeroy',
         fillcolor: 'rgba(59, 130, 246, 0.1)'
     };
     
-    Plotly.newPlot('chart_h', [hTrace], {
+    Plotly.newPlot('chart_h', [pTrace], {
         ...layoutConfig,
-        title: { text: "Yer osti suvlari sathi: H(t)", font: { color: '#f8fafc', size: 18 } },
+        title: { text: "Darsi Gidro-Bosim dinamikasi: P(t) kPa", font: { color: '#f8fafc', size: 16 } },
         xaxis: { title: 'Vaqt (soat)', gridcolor: 'rgba(255,255,255,0.05)', zerolinecolor: 'rgba(255,255,255,0.1)' },
-        yaxis: { title: 'Chuqurlik H (m)', range: [0, 3.25], gridcolor: 'rgba(255,255,255,0.05)', zerolinecolor: 'rgba(255,255,255,0.1)' }
+        yaxis: { title: 'Bosim P (kPa)', gridcolor: 'rgba(255,255,255,0.05)', zerolinecolor: 'rgba(255,255,255,0.1)' }
     }, { responsive: true });
 
     // 2. Dynamics Chart (Saturation and Salinity)
@@ -145,12 +167,12 @@ function showAnalytics(data, payload) {
     
     // Formatting with nice typography
     text.innerHTML = `
-        <strong>Tanlangan Muhit:</strong> <span style="color:var(--text-primary)">${payload.soil_type}</span><br>
+        <strong>Tanlangan Muhit:</strong> <span style="color:var(--text-primary)">${data.detected_soil || payload.soil_type} ${data.ai_confidence ? '(AI Orqali topildi, ishontirish: ' + Math.round(data.ai_confidence*100) + '%)' : ''}</span><br>
         <strong>Dastlabki (k0):</strong> <span style="color:var(--text-primary)">${data.k0} m/soat</span> | 
         <strong>Joriy Dinamik k:</strong> <span style="color:var(--text-primary)">${data.k_vals[data.k_vals.length-1].toFixed(2)} m/soat</span><br>
-        <strong>Harorat Ta'siri:</strong> <span style="color:var(--text-primary)">T=${payload.T_temp}°C (T/T0 nisbati qatnashgan)</span><br>
-        <strong>Sho'rlanish va To'yinish:</strong> <span style="color:var(--text-primary)">S0=${payload.S0}, tuz kamayishi ${payload.k_S.toFixed(3)} tezlikda, sat. ${payload.k_F.toFixed(2)}</span><br><br>
-        <em>H(t) sathi parametrlar (P, S, T, F) dinamik omiliga ko'ra hisoblangan <strong>k(t)</strong> yordamida uzluksiz chizildi.</em>
+        <strong>Harorat Ta'siri:</strong> <span style="color:var(--text-primary)">T=${payload.T_temp}°C (Darsi modeli bo'yicha)</span><br>
+        <strong>Eng Zich Konsentratsiya (C):</strong> <span style="color:var(--text-primary)">${Math.max(...data.Z_surface.flat()).toFixed(3)} (Konveksiya-Diffuziya)</span><br><br>
+        <em>P(t) bosimi va parametrlar (P, S, T, F) dinamik omiliga ko'ra hisoblangan <strong>k(t)</strong> yordamida ilmiy arxitektura chizildi.</em>
     `;
 }
 

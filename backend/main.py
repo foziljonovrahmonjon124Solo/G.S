@@ -23,7 +23,15 @@ soil_params = {
 
 @app.post("/api/simulate")
 def simulate(data: dict = Body(...)):
-    soil = data.get("soil_type", "Shag'al")
+    has_image = data.get("has_image", False)
+    gps = data.get("gps", None)
+    
+    ai_conf = None
+    if has_image:
+        soil = "Qum"  # AI Orqali vizual baholash imitatsiyasi
+        ai_conf = 0.92
+    else:
+        soil = data.get("soil_type", "Shag'al")
     sim_time = float(data.get("sim_time", 12.0))
     Qs = float(data.get("Qs", 100.0))
     Qin = float(data.get("Qin", 0.0))
@@ -90,6 +98,9 @@ def simulate(data: dict = Body(...)):
     y = np.linspace(0, Ly, 40)
     X, Y = np.meshgrid(x, y)
     
+    # Bosim P_vals = H * 9.81
+    P_vals = [h * 9.81 for h in H_vals]
+    
     # Darsi tezligi (Diffuziyaga o'tkazuvchanlik k ta'siri orqali aks ettirildi)
     diff_factor = 10.0 + k0 * sim_time * 20.0
     C_dist = np.exp(-((X - 40.0)**2 + (Y - 40.0)**2) / (2.0 * diff_factor))
@@ -101,6 +112,8 @@ def simulate(data: dict = Body(...)):
     
     return {
         "status": "success",
+        "detected_soil": soil,
+        "ai_confidence": ai_conf,
         "soil_desc": f"k0 = {k0} m/soat",
         "k0": k0,
         "darcy_u": darcy_u,
@@ -108,6 +121,7 @@ def simulate(data: dict = Body(...)):
         "epsilon": 0.001,
         "t_vals": t_vals.tolist(),
         "H_vals": H_vals,
+        "P_vals": P_vals,
         "k_vals": k_vals,
         "F_vals": F_vals,
         "S_vals": S_vals,

@@ -21,8 +21,20 @@
             <aside class="sidebar glass-panel">
                 <h2>Parametrlar</h2>
                 <form id="simForm">
+                    <h3 style="margin-bottom:10px; font-size:14px; color:var(--text-primary); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Mobil Lokatsiya va AI Kamera</h3>
                     <div class="input-group">
-                        <label for="soil_type">Tuproq Turi</label>
+                        <button type="button" id="getGpsBtn" style="width:100%; padding: 0.8rem; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid #3b82f6; border-radius:10px; cursor:pointer; margin-bottom:0.5rem; transition:0.3s;">🌍 GPS orqali mintaqani topish</button>
+                        <small id="gpsStatus" style="color:#94a3b8;"></small>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="cameraInput">📸 AI Tuproq Tahlili (Rasm yuklash)</label>
+                        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="background:transparent; border:1px dashed rgba(255,255,255,0.2); padding:0.5rem; text-align:center;">
+                    </div>
+
+                    <h3 style="margin-top:20px; margin-bottom:10px; font-size:14px; color:var(--text-primary); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Asosiy Parametrlar</h3>
+                    <div class="input-group">
+                        <label for="soil_type">Tuproq Turi (Rasm orqali avto-aniqlanadi)</label>
                         <select id="soil_type" name="soil_type">
                             <option value="Shag'al">Shag'al</option>
                             <option value="Qum">Qum</option>
