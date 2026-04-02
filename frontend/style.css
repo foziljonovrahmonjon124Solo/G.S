@@ -211,3 +211,34 @@ input[type="number"]:focus, select:focus {
     }
     .hero h1 { font-size: 2.2rem; }
 }
+
+@media (max-width: 600px) {
+    .app-container {
+        padding: 1rem 0.5rem;
+    }
+    .hero {
+        margin-bottom: 2rem;
+    }
+    .hero h1 {
+        font-size: 1.7rem;
+    }
+    .hero p {
+        font-size: 0.95rem;
+    }
+    .glass-panel {
+        padding: 1.25rem;
+        border-radius: 12px;
+    }
+    .chart-container {
+        height: 300px;
+    }
+    .input-group label {
+        font-size: 0.85rem;
+    }
+    .analytics-card {
+        border-radius: 10px;
+        border-left: 0;
+        border-top: 4px solid var(--success);
+        padding: 1rem;
+    }
+}
