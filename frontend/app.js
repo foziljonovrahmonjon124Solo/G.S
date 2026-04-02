@@ -4,12 +4,16 @@ document.getElementById('simForm').addEventListener('submit', async (e) => {
     btn.textContent = "Hisoblanmoqda...";
     btn.disabled = true;
 
-    const payload = {
+        const payload = {
         soil_type: document.getElementById('soil_type').value,
         sim_time: parseFloat(document.getElementById('sim_time').value),
         Qs: parseFloat(document.getElementById('Qs').value),
         Qin: parseFloat(document.getElementById('Qin').value),
-        Qb: parseFloat(document.getElementById('Qb').value)
+        Qb: parseFloat(document.getElementById('Qb').value),
+        T_temp: parseFloat(document.getElementById('T_temp').value),
+        S0: parseFloat(document.getElementById('S0').value),
+        k_S: parseFloat(document.getElementById('k_S').value),
+        k_F: parseFloat(document.getElementById('k_F').value)
     };
 
     try {
@@ -80,7 +84,15 @@ function renderCharts(data) {
         line: { color: '#ef4444', width: 3, shape: 'spline' }
     };
     
-    Plotly.newPlot('chart_dyn', [fTrace, sTrace], {
+    const kTrace = {
+        x: data.t_vals,
+        y: data.k_vals,
+        mode: 'lines',
+        name: "k(t)",
+        line: { color: '#eab308', width: 2, shape: 'spline', dash: 'dash' }
+    };
+    
+    Plotly.newPlot('chart_dyn', [fTrace, kTrace, sTrace], {
         ...layoutConfig,
         title: { text: 'Dinamik Parametrlar', font: { color: '#f8fafc', size: 18 } },
         xaxis: { title: 'Vaqt (soat)', gridcolor: 'rgba(255,255,255,0.05)', zerolinecolor: 'rgba(255,255,255,0.1)' },
@@ -125,10 +137,10 @@ function showAnalytics(data, payload) {
     // Formatting with nice typography
     text.innerHTML = `
         <strong>Tanlangan Muhit:</strong> <span style="color:var(--text-primary)">${payload.soil_type}</span><br>
-        <strong>O'tkazuvchanlik (k0):</strong> <span style="color:var(--text-primary)">${data.k0} m/soat</span><br>
-        <strong>Darsi Tezligi (u):</strong> <span style="color:var(--text-primary)">${data.darcy_u.toFixed(4)} m/soat</span><br>
-        <strong>Iteratsiya Aniqligi:</strong> <span style="color:var(--text-primary)">&epsilon; = ${data.epsilon}</span><br>
-        <strong>Barqaror Qadam:</strong> <span style="color:var(--text-primary)">&Delta;t = ${data.dt.toFixed(3)} soat</span><br><br>
-        <em>H(t) sathi dastlabki 2.5 soatda o'zgarmasdan, logistik to'yinish bilan birga Darsi va Adveksiya-Diffuziya modeliga muvofiq hisoblandi.</em>
+        <strong>Dastlabki (k0):</strong> <span style="color:var(--text-primary)">${data.k0} m/soat</span> | 
+        <strong>Joriy Dinamik k:</strong> <span style="color:var(--text-primary)">${data.k_vals[data.k_vals.length-1].toFixed(2)} m/soat</span><br>
+        <strong>Harorat Ta'siri:</strong> <span style="color:var(--text-primary)">T=${payload.T_temp}°C (T/T0 nisbati qatnashgan)</span><br>
+        <strong>Sho'rlanish va To'yinish:</strong> <span style="color:var(--text-primary)">S0=${payload.S0}, tuz kamayishi ${payload.k_S.toFixed(3)} tezlikda, sat. ${payload.k_F.toFixed(2)}</span><br><br>
+        <em>H(t) sathi parametrlar (P, S, T, F) dinamik omiliga ko'ra hisoblangan <strong>k(t)</strong> yordamida uzluksiz chizildi.</em>
     `;
 }

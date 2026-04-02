@@ -29,6 +29,11 @@ def simulate(data: dict = Body(...)):
     Qin = float(data.get("Qin", 0.0))
     Qb = float(data.get("Qb", 10.0))
     
+    T_temp = float(data.get("T_temp", 25.0))
+    S0_user = float(data.get("S0", 10.0))
+    k_S_user = float(data.get("k_S", 0.05))
+    k_F_user = float(data.get("k_F", 1.0))
+    
     k0 = soil_params.get(soil, {"k0": 1.85})["k0"]
     
     Lx, Ly, Lz = 80, 80, 3.25
@@ -38,35 +43,47 @@ def simulate(data: dict = Body(...)):
     
     # 2. Matematik Algoritm (Backend Logic)
     H_vals = []
+    k_vals = []
+    F_vals = []
+    S_vals = []
     
-    # Shag'al t=12 da 1.85 metr bo'lishi uchun formula:
-    # 3.0 dan 1.85 ga tushishi uchun delta = 1.15
-    target_drop_at_12 = 1.15 * (k0 / 1.85)
-    c = 0.18865 # 1.2 * (1 - e^(-12 * c)) yondashuvi uchun eksponensial faktor
-    max_drop = target_drop_at_12 * 1.2
+    T0 = 20.0
+    T_ratio = T_temp / T0
+    F_max = 0.45
+    t0_sat = sim_time / 4.0
+    
+    H_current = 3.0
     
     for t in t_vals:
-        if t <= 2.5:
-            # Dastlabki 2.5 soat davomida sath o'zgarmaydi
-            H = 3.0
-        else:
-            H = 3.0 - max_drop * (1 - np.exp(-c * (t - 2.5)))
+        # Logistik to'yinish F(t)
+        F_t = F_max / (1 + np.exp(-k_F_user * (t - t0_sat)))
         
-        # Default qiymatlardan og'ish bo'lganda juda kichik ta'sir qiladi, t=12 da aniqlik saqlanib qoladi
+        # Sho'rlanish darajasi S(t)
+        S_t = S0_user * np.exp(-k_S_user * t)
+        
+        # Bosim nisbati (P/P0 ~ H/H0)
+        P_ratio = H_current / 3.0
+        
+        # S nisbati S/S0
+        S_ratio = S_t / S0_user if S0_user > 0 else 0.0
+        
+        # Dinamik filtratsiya koeffitsiyenti formulasi
+        # k(x,y,z,t) = k0 * (1 + P/P0 - S/S0) * (T/T0) * (1 - F)
+        k_dyn = k0 * (1.0 + P_ratio - S_ratio) * T_ratio * (1.0 - F_t)
+        k_dyn = max(0.001, k_dyn) # Musbat ushlab turish
+        
+        # Suv sathi o'zgarishini modellashtirish
+        c_calib = 0.1 # Realistik pasayish faktori
         net_effect = (Qs + Qin - Qb - 90.0) * 0.0001
-        H += net_effect
-        H_vals.append(max(0, min(H, 3.25)))
         
-    # Logistik to'yinish F(t)
-    F_max = 0.45
-    t0 = 3.0
-    k_F = 1.5 
-    F_vals = F_max / (1 + np.exp(-k_F * (t_vals - t0)))
-    
-    # Sho'rlanish S(t): 10 g/l dan 3 g/l gacha (12 soatda)
-    S0 = 10.0
-    k_S = -np.log(3.0 / 10.0) / 12.0
-    S_vals = S0 * np.exp(-k_S * t_vals)
+        drop = c_calib * k_dyn * dt
+        H_current = H_current - drop + net_effect
+        H_current = max(0.0, min(H_current, 3.25))
+        
+        H_vals.append(H_current)
+        k_vals.append(k_dyn)
+        F_vals.append(F_t)
+        S_vals.append(S_t)
     
     # 3D Map: Maydon markazidan (40, 40) adveksiya-diffuziya
     x = np.linspace(0, Lx, 40)
@@ -91,8 +108,9 @@ def simulate(data: dict = Body(...)):
         "epsilon": 0.001,
         "t_vals": t_vals.tolist(),
         "H_vals": H_vals,
-        "F_vals": F_vals.tolist(),
-        "S_vals": S_vals.tolist(),
+        "k_vals": k_vals,
+        "F_vals": F_vals,
+        "S_vals": S_vals,
         "x": x.tolist(),
         "y": y.tolist(),
         "Z_surface": Z_surface.tolist()

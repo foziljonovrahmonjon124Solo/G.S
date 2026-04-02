@@ -50,6 +50,25 @@
                         <input type="number" id="Qb" name="Qb" value="10.0" step="0.1">
                     </div>
 
+                    <h3 style="margin-top:20px; font-size:14px; color:var(--text-primary); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Fizik Omillar (Dinamik k)</h3>
+                    
+                    <div class="input-group">
+                        <label for="T_temp">Harorat (T, °C)</label>
+                        <input type="number" id="T_temp" name="T_temp" value="25" min="20" max="40" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="S0">Boshlang'ich sho'rlanish (S0)</label>
+                        <input type="number" id="S0" name="S0" value="10.0" min="0.01" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label for="k_S">Tuz kamayish koeffitsiyenti (k_s)</label>
+                        <input type="number" id="k_S" name="k_S" value="0.05" min="0.001" max="0.1" step="0.001">
+                    </div>
+                    <div class="input-group">
+                        <label for="k_F">To'yinish tezligi (k_F)</label>
+                        <input type="number" id="k_F" name="k_F" value="1.0" min="0.1" max="2.0" step="0.1">
+                    </div>
+
                     <button type="submit" class="primary-btn">Simulyatsiyani Boshlash</button>
                 </form>
                 

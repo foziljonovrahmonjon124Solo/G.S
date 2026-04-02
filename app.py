@@ -29,6 +29,12 @@ Qs = st.sidebar.number_input("Sug'orish suvi miqdori (Qs, m³/soat)", value=100.
 Qin = st.sidebar.number_input("Yog'inlar (Qin, m³/soat)", value=0.0)
 Qb = st.sidebar.number_input("Bug'lanish (Qb, m³/soat)", value=10.0)
 
+st.sidebar.markdown("### Fizik Omillar (Dinamik k)")
+T_temp = st.sidebar.number_input("Harorat (T, °C)", value=25.0, min_value=20.0, max_value=40.0)
+S0_user = st.sidebar.number_input("Boshlang'ich sho'rlanish (S0)", value=10.0, min_value=0.01)
+k_S_user = st.sidebar.number_input("Tuz kamayish koeffitsiyenti (k_s)", value=0.05, min_value=0.001, max_value=0.1, step=0.001)
+k_F_user = st.sidebar.number_input("To'yinish tezligi (k_F)", value=1.0, min_value=0.1, max_value=2.0)
+
 # Constants
 Lx, Ly, Lz = 80, 80, 3.0  # O'lchamlar va chuqurlik
 epsilon = 0.001           # Iteratsiya aniqligi
@@ -44,24 +50,43 @@ dt = min(0.1, dt_stable)
 
 # Simulyatsiya qadamlari
 t_vals = np.linspace(0, sim_time, int(sim_time / dt) + 1)
-H_initial = 3.0
 
-# H(t) - sath o'zgarishi algoritmi (modelga mos exponential decay qonuniyati)
-decay_rate = -np.log(target_12h / H_initial) / 12 if target_12h > 0 else 0.1
-net_flow = (Qs + Qin - Qb) * 0.0001  # Kichik o'zgarish koeffitsienti
+T0 = 20.0
+T_ratio = T_temp / T0
+F_max = 0.45
+t0_sat = sim_time / 4.0
 
-H_vals = H_initial * np.exp(-decay_rate * t_vals) + net_flow * t_vals
-H_vals = np.clip(H_vals, 0, Lz)
+H_vals = []
+k_vals = []
+F_vals = []
+S_vals = []
 
-# Dinamik tenglamalar: To'yinish (Logistic) va Sho'rlanish (Exponential)
-F_max = 1.0
-k_F = 0.5
-t0 = sim_time / 2
-F_vals = F_max / (1 + np.exp(-k_F * (t_vals - t0)))
+H_current = 3.0
+for t in t_vals:
+    F_t = F_max / (1 + np.exp(-k_F_user * (t - t0_sat)))
+    S_t = S0_user * np.exp(-k_S_user * t)
+    
+    P_ratio = H_current / 3.0
+    S_ratio = S_t / S0_user if S0_user > 0 else 0.0
+    
+    k_dyn = k0 * (1.0 + P_ratio - S_ratio) * T_ratio * (1.0 - F_t)
+    k_dyn = max(0.001, k_dyn)
+    
+    c_calib = 0.1
+    net_effect = (Qs + Qin - Qb - 90.0) * 0.0001
+    drop = c_calib * k_dyn * dt
+    
+    H_current = H_current - drop + net_effect
+    H_current = max(0.0, min(H_current, 3.25))
+    
+    H_vals.append(H_current)
+    k_vals.append(k_dyn)
+    F_vals.append(F_t)
+    S_vals.append(S_t)
 
-S0 = 10.0 # Boshlang'ich sho'rlanish (g/l)
-k_S = 0.1
-S_vals = S0 * np.exp(-k_S * t_vals)
+H_vals = np.array(H_vals)
+F_vals = np.array(F_vals)
+S_vals = np.array(S_vals)
 
 # 3D va issiqlik xaritasi uchun konsentratsiya modellashtirish (Adveksiya-diffuziya)
 x = np.linspace(0, Lx, 40)
@@ -89,11 +114,12 @@ with col1:
 
     st.markdown("#### Dinamik parametrlar: To'yinish va Sho'rlanish")
     fig_dyn = go.Figure()
-    fig_dyn.add_trace(go.Scatter(x=t_vals, y=F_vals, mode='lines', name="To'yinish (F)", yaxis="y1"))
-    fig_dyn.add_trace(go.Scatter(x=t_vals, y=S_vals, mode='lines', name="Sho'rlanish (S, g/l)", yaxis="y2"))
+    fig_dyn.add_trace(go.Scatter(x=t_vals, y=F_vals, mode='lines', name="To'yinish (F)", yaxis="y1", line=dict(color="green")))
+    fig_dyn.add_trace(go.Scatter(x=t_vals, y=k_vals, mode='lines', name="k(t)", yaxis="y1", line=dict(color="orange", dash="dash")))
+    fig_dyn.add_trace(go.Scatter(x=t_vals, y=S_vals, mode='lines', name="Sho'rlanish (S, g/l)", yaxis="y2", line=dict(color="red")))
     fig_dyn.update_layout(
         xaxis_title="Vaqt (soat)",
-        yaxis=dict(title="To'yinish (ulush)", color="green"),
+        yaxis=dict(title="F (ulush) / k(t)", color="green"),
         yaxis2=dict(title="Sho'rlanish (g/l)", color="red", overlaying="y", side="right")
     )
     st.plotly_chart(fig_dyn, use_container_width=True)
