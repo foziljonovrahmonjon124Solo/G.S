@@ -1,3 +1,11 @@
+document.addEventListener('DOMContentLoaded', () => {
+    if ('Notification' in window && navigator.serviceWorker) {
+        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
+});
+
 document.getElementById('simForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.querySelector('.primary-btn');
@@ -29,6 +37,7 @@ document.getElementById('simForm').addEventListener('submit', async (e) => {
         if(data.status === 'success') {
             renderCharts(data);
             showAnalytics(data, payload);
+            checkAndPushNotifications(data);
         }
     } catch(err) {
         console.error(err);
@@ -143,4 +152,38 @@ function showAnalytics(data, payload) {
         <strong>Sho'rlanish va To'yinish:</strong> <span style="color:var(--text-primary)">S0=${payload.S0}, tuz kamayishi ${payload.k_S.toFixed(3)} tezlikda, sat. ${payload.k_F.toFixed(2)}</span><br><br>
         <em>H(t) sathi parametrlar (P, S, T, F) dinamik omiliga ko'ra hisoblangan <strong>k(t)</strong> yordamida uzluksiz chizildi.</em>
     `;
+}
+
+function checkAndPushNotifications(data) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    function sendPush(title, body) {
+        navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification(title, {
+                body: body,
+                icon: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzNiODJmNiI+PHBhdGggZD0iTTEyIDMuMThMMiAuNzY0djIwLjQ3MkwxMiAyNEwyMiAyMS4yMzZWMS43NjVMMTIgMy4xOHoiLz48L3N2Zz4=',
+                badge: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzNiODJmNiI+PHBhdGggZD0iTTEyIDMuMThMMiAuNzY0djIwLjQ3MkwxMiAyNEwyMiAyMS4yMzZWMS43NjVMMTIgMy4xOHoiLz48L3N2Zz4=',
+                vibrate: [200, 100, 200]
+            });
+        });
+    }
+
+    const minH = Math.min(...data.H_vals);
+    const maxF = Math.max(...data.F_vals);
+    const dropAmount = 3.0 - minH;
+
+    // Condition 1: Infiltration reaches groundwater
+    if (dropAmount > 0.05) {
+        sendPush("💧 Infiltratsiya Oqimi", "Infiltratsiya oqimi yer osti suvlariga yetib bordi! Sub-sath tezligi o'zgardi.");
+    }
+    
+    // Condition 2: Critical depth
+    if (minH <= 1.85) {
+        setTimeout(() => sendPush("⚠️ Kritik Suv Sathi", `Diqqat: Suv sathi kritik chuqurlikka (1.85 m dan past) ekanligi qayd etildi (${minH.toFixed(2)} m).`), 1500);
+    }
+    
+    // Condition 3: Max Saturation
+    if (maxF >= 0.40) {
+        setTimeout(() => sendPush("🚨 Maksimal To'yinish", `Tuproq to'yinish darajasi deyarli maksimal qiymatida (F = ${maxF.toFixed(2)}). Gapingiz zudlik bilan kerak!`), 3000);
+    }
 }
