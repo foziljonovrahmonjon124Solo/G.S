@@ -13,7 +13,7 @@ document.getElementById('simForm').addEventListener('submit', async (e) => {
     };
 
     try {
-        const response = await fetch('http://localhost:8000/api/simulate', {
+        const response = await fetch('/api/simulate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
